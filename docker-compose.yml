@@ -1,0 +1,74 @@
+version: "3"
+services:
+
+  database:
+    image: postgres:15.1
+    container_name: pipa-db
+    restart: unless-stopped
+    ports:
+      - 60700:5432
+    environment:
+      - POSTGRES_PORT=5432
+      - POSTGRES_USERNAME=postgres
+      - POSTGRES_PASSWORD=123456789
+    volumes:
+      - ../pipa-db/create_db.sql:/docker-entrypoint-initdb.d/create_db.sql
+    networks:
+      - pipa
+
+  backend:
+    image: pipa-back
+    restart: unless-stopped
+    build: ../pipa-back
+    container_name: pipa-back
+    depends_on:
+      - database
+    ports:
+      - 5000:5000
+    networks:
+      - pipa
+    environment:
+      - DB_HOST=dbstore-gsi-des01.gsi.mpmg.mp.br
+      - DB_PORT=60700
+      - DB_NAME=pipa_db
+      - DB_USERNAME=pipa_a02
+      - DB_PASSWORD=winet_a02
+      - HOSTNAME_PORT_WSO2='150.164.10.89:9443'
+      - FREEIPA_DOMAIN=ipa.winetipa.com
+      - FREEIPA_ROOT_USERNAME=admin
+      - FREEIPA_ROOT_PASSWORD=winet12345
+      - GITLAB_DOMAIN='http://150.164.10.82'
+      - GITLAB_ROOT_USERNAME=root
+      - GITLAB_ROOT_PASSWORD=winet12345
+      - RANGER_DOMAIN='http://150.164.10.113:6080'
+      - RANGER_ROOT_USERNAME=admin
+      - RANGER_ROOT_PASSWORD=rangeradmin1
+      - WSO2_CLIENT_ID=gVXPQX0P0ffBUn2gs9aG9LGGRtsa
+      - WSO2_CLIENT_TOKEN=4aHj9_6vCenphTTWzZHvEhafp4ca
+      - JWT_SECRET_KEY=_dgUDB/DT4567"%8tgV*HYe
+      - CALLBACK_URL='http://localhost:3000/home'
+      - APP_SERVER='10.21.0.126'
+      - REACT_APP_URL='https://pipa-dev.gsi.mpmg.mp.br'
+      - APP_API_URL="https://servicosgsi.mpmg.mp.br/pipa-test"
+    entrypoint:
+      [
+        "gunicorn",
+        "--bind",
+        "0.0.0.0:5000",
+        "server:app",
+        "--log-level=debug"
+      ]
+
+  frontend:
+    image: pipa-front
+    restart: unless-stopped
+    build: ../pipa-front
+    container_name: pipa-front
+    ports:
+      - 3000:3000
+    networks:
+      - pipa
+
+networks:
+  pipa:
+    driver: bridge
